@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Github, Menu, X } from "lucide-react";
+import { Download, Github, Menu, Music4, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DhunLogo } from "@/components/site/logo";
 import {
   EXTERNAL_LINK_PROPS,
   GITHUB_REPO,
 } from "@/components/site/constants";
+import { useAppMode } from "@/lib/view-store";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -21,6 +22,12 @@ const LINKS = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const openPlayer = useAppMode((s) => s.openPlayer);
+
+  const launchPlayer = () => {
+    setMenuOpen(false);
+    openPlayer();
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -70,6 +77,15 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Button
+            variant="outline"
+            size="sm"
+            className="hidden sm:inline-flex"
+            onClick={launchPlayer}
+          >
+            <Music4 className="size-3.5" />
+            Web player
+          </Button>
+          <Button
             variant="ghost"
             size="icon"
             asChild
@@ -109,6 +125,14 @@ export function Navbar() {
           className="border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden"
         >
           <div className="mx-auto flex max-w-6xl flex-col gap-1">
+            <button
+              type="button"
+              onClick={launchPlayer}
+              className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground"
+            >
+              <Music4 className="size-4" />
+              Open the web player
+            </button>
             {LINKS.map((link) => (
               <a
                 key={link.href}

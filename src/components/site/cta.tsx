@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Music4, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCommand } from "@/components/site/copy-command";
 import {
@@ -9,8 +9,11 @@ import {
   GITHUB_REPO,
   INSTALL_COMMAND,
 } from "@/components/site/constants";
+import { useAppMode } from "@/lib/view-store";
 
 export function Cta() {
+  const openPlayer = useAppMode((s) => s.openPlayer);
+
   return (
     <section className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -53,6 +56,10 @@ export function Cta() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Button size="lg" asChild>
                 <a href="#install">Get started</a>
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => openPlayer()}>
+                <Music4 className="size-4" />
+                Open the web player
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <a

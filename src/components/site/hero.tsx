@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Gauge, Laptop, Play, ShieldCheck, SquareTerminal } from "lucide-react";
+import { Gauge, Laptop, Music4, Play, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyCommand } from "@/components/site/copy-command";
 import { Terminal } from "@/components/site/terminal";
 import { INSTALL_COMMAND } from "@/components/site/constants";
+import { useAppMode } from "@/lib/view-store";
 
 const HIGHLIGHTS = [
   { icon: Gauge, label: "320 kbps max audio" },
@@ -14,6 +15,8 @@ const HIGHLIGHTS = [
 ];
 
 export function Hero() {
+  const openPlayer = useAppMode((s) => s.openPlayer);
+
   return (
     <section id="top" className="relative overflow-hidden pb-16 pt-28 sm:pt-32 lg:pb-24">
       {/* backdrop: grid + glow */}
@@ -36,7 +39,7 @@ export function Hero() {
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/70 py-1 pl-1.5 pr-3.5 font-mono text-xs text-muted-foreground">
             <span className="dot-pulse size-1.5 rounded-full bg-primary" />
-            v2.4.0 — playlists &amp; queue sync are here
+            new — a full web player, right on this page
           </div>
 
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-balance sm:text-5xl lg:text-6xl">
@@ -55,16 +58,14 @@ export function Hero() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button size="lg" asChild>
+            <Button size="lg" onClick={() => openPlayer()}>
+              <Music4 className="size-4" />
+              Launch the web player
+            </Button>
+            <Button size="lg" variant="outline" asChild>
               <a href="#demo">
                 <Play className="size-4" />
                 Try the live demo
-              </a>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#commands">
-                <SquareTerminal className="size-4" />
-                See the commands
               </a>
             </Button>
           </div>
