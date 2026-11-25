@@ -617,7 +617,7 @@ export function TrackCard({
 
   const play = () => {
     if (active) {
-      usePlayer.getState().playPausePause();
+      usePlayer.getState().playPause();
       return;
     }
     const idx = context.findIndex((t) => t.id === track.id);
