@@ -8,6 +8,10 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/* Streaming proxy: allow long-lived audio streams on serverless hosts
+   (60s is the safe ceiling across plans; the audio element fetches in
+   bounded Range chunks, so typical invocations are much shorter). */
+export const maxDuration = 60;
 
 const QUALITIES: SongQuality[] = ["96", "160", "320"];
 
