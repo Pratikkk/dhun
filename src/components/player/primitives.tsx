@@ -451,7 +451,7 @@ export function TrackRow({
   };
 
   return (
-    <li className="group flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[0.06] sm:px-3">
+    <li className="group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.06] sm:gap-3 sm:px-3 sm:py-1.5">
       {showIndex ? (
         <button
           type="button"
@@ -531,7 +531,7 @@ export function TrackRow({
 
       <LikeButton
         track={track}
-        className="transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+        className="hidden transition-opacity sm:flex sm:opacity-0 sm:group-hover:opacity-100"
       />
       <TrackMenu
         track={track}

@@ -24,6 +24,20 @@ import {
 
 type SearchStatus = "idle" | "loading" | "success" | "empty" | "error";
 
+/** Devices with a real pointer get autofocus; touch devices keep the
+    keyboard closed until the user taps the field. */
+function useFinePointer(): boolean {
+  const [fine, setFine] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(pointer: fine)");
+    const update = () => setFine(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+  return fine;
+}
+
 const GENRES: { label: string; query: string; className: string }[] = [
   { label: "Bollywood", query: "Bollywood", className: "from-orange-600 to-neutral-900" },
   { label: "Punjabi", query: "Punjabi", className: "from-rose-600 to-neutral-900" },
@@ -136,6 +150,7 @@ export function SearchView() {
 
   const abortRef = useRef<AbortController | null>(null);
   const lastSearchedRef = useRef<string | null>(null);
+  const finePointer = useFinePointer();
 
   /* Cancel any in-flight search when leaving the view. */
   useEffect(() => {
@@ -191,7 +206,7 @@ export function SearchView() {
     <div>
       <div className="relative mb-6">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-3.5 top-1/2 size-4.5 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <Input
@@ -204,8 +219,10 @@ export function SearchView() {
           }}
           placeholder="What do you want to play?"
           aria-label="Search songs, albums and playlists"
-          autoFocus
-          className="h-11 rounded-full border-border/50 bg-white/[0.06] pl-9 pr-9 text-sm focus-visible:ring-primary"
+          autoFocus={finePointer}
+          inputMode="search"
+          enterKeyHint="search"
+          className="h-12 rounded-full border-border/50 bg-white/[0.06] pl-10 pr-11 text-base focus-visible:ring-primary"
         />
         {query.length > 0 ? (
           <Button
@@ -213,7 +230,7 @@ export function SearchView() {
             size="icon"
             aria-label="Clear search"
             onClick={() => setQuery("")}
-            className="absolute right-1 top-1/2 size-8 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground"
+            className="absolute right-1 top-1/2 size-9 -translate-y-1/2 rounded-full text-muted-foreground hover:text-foreground"
           >
             <X className="size-4" />
           </Button>
