@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useDragControls,
+  type PanInfo,
+} from "framer-motion";
 import {
   ChevronDown,
   Loader2,
@@ -13,6 +18,9 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  Volume1,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePlayer } from "@/lib/player-store";
@@ -26,6 +34,7 @@ import {
 } from "@/components/player/primitives";
 import { SeekSlider } from "@/components/player/player-bar";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 export function NowPlaying() {
   const open = useViewRouter((s) => s.nowPlayingOpen);
@@ -36,6 +45,8 @@ export function NowPlaying() {
   const isLoading = usePlayer((s) => s.isLoading);
   const position = usePlayer((s) => s.position);
   const duration = usePlayer((s) => s.duration);
+  const volume = usePlayer((s) => s.volume);
+  const muted = usePlayer((s) => s.muted);
   const shuffle = usePlayer((s) => s.shuffle);
   const repeat = usePlayer((s) => s.repeat);
 
@@ -44,6 +55,11 @@ export function NowPlaying() {
   const prev = usePlayer((s) => s.prev);
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
   const cycleRepeat = usePlayer((s) => s.cycleRepeat);
+  const setVolume = usePlayer((s) => s.setVolume);
+  const toggleMute = usePlayer((s) => s.toggleMute);
+
+  const dragControls = useDragControls();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const nextTrack = usePlayer(
     (s) =>
@@ -53,6 +69,13 @@ export function NowPlaying() {
         : null)
   );
 
+  /* Swipe-down dismiss: enough distance or a fast flick. */
+  const onDragEnd = (_e: unknown, info: PanInfo) => {
+    if (info.offset.y > 120 || info.velocity.y > 800) {
+      setNowPlayingOpen(false);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -61,6 +84,9 @@ export function NowPlaying() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, setNowPlayingOpen]);
+
+  const VolumeIcon =
+    muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   return (
     <AnimatePresence>
@@ -73,7 +99,13 @@ export function NowPlaying() {
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="fixed inset-0 z-50"
+          drag="y"
+          dragListener={false}
+          dragControls={dragControls}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0, bottom: 0.7 }}
+          onDragEnd={onDragEnd}
+          className="fixed inset-0 z-50 touch-pan-y"
         >
           <div
             className={cn(
@@ -84,37 +116,50 @@ export function NowPlaying() {
           />
           <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
 
-          <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-5 pb-8 pt-4 sm:px-8">
-            {/* Top row */}
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="flex w-10 justify-start">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Close now playing"
-                  onClick={() => setNowPlayingOpen(false)}
-                  className="size-10 rounded-full text-white/80 hover:text-white"
-                >
-                  <ChevronDown className="size-5" />
-                </Button>
-              </div>
-              <span className="flex-1 text-center font-mono text-[11px] uppercase tracking-widest text-white/70">
-                Now playing
-              </span>
-              <div className="flex w-10 justify-end">
-                {current ? (
-                  <TrackMenu
-                    track={current}
-                    className="text-white/70 hover:text-white"
-                  />
-                ) : null}
+          <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pb-8 pt-2 sm:px-8 sm:pt-4">
+            {/* Top row — drag here (or the grabber) to swipe the sheet away */}
+            <div
+              className="flex shrink-0 touch-none flex-col"
+              onPointerDown={(e) => dragControls.start(e)}
+            >
+              {/* Grabber affordance (mobile) */}
+              <span
+                aria-hidden="true"
+                className="mx-auto mb-1 h-1.5 w-12 rounded-full bg-white/30 sm:hidden"
+              />
+              <div className="flex items-center gap-2">
+                <div className="flex w-11 justify-start">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Close now playing"
+                    onClick={() => setNowPlayingOpen(false)}
+                    className="size-11 rounded-full text-white/80 hover:text-white"
+                  >
+                    <ChevronDown className="size-6" />
+                  </Button>
+                </div>
+                <span className="flex-1 text-center font-mono text-[11px] uppercase tracking-widest text-white/70">
+                  Now playing
+                </span>
+                <div className="flex w-11 justify-end">
+                  {current ? (
+                    <TrackMenu
+                      track={current}
+                      className="text-white/70 hover:text-white"
+                    />
+                  ) : null}
+                </div>
               </div>
             </div>
 
             {current ? (
               <>
-                <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-                  <div className="flex min-h-full flex-col justify-center gap-6 py-6">
+                <div
+                  ref={scrollRef}
+                  className="min-h-0 flex-1 overflow-y-auto scrollbar-thin overscroll-contain"
+                >
+                  <div className="flex min-h-full flex-col justify-center gap-6 py-4">
                     <motion.div
                       animate={{ scale: isPlaying ? 1 : 0.98 }}
                       transition={{ duration: 0.3, ease: "easeOut" }}
@@ -124,7 +169,7 @@ export function NowPlaying() {
                         src={current.image}
                         alt={`Album art for ${current.album || current.title}`}
                         seed={current.id}
-                        className="mx-auto aspect-square w-full max-w-[min(70vh,22rem)] rounded-2xl shadow-2xl"
+                        className="mx-auto aspect-square w-full max-w-[min(65vh,22rem)] rounded-2xl shadow-2xl"
                       />
                     </motion.div>
 
@@ -137,7 +182,10 @@ export function NowPlaying() {
                           {current.artists}
                         </p>
                       </div>
-                      <LikeButton track={current} />
+                      <LikeButton
+                        track={current}
+                        className="size-10 text-white/80 hover:text-white"
+                      />
                     </div>
 
                     <div>
@@ -150,14 +198,14 @@ export function NowPlaying() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center gap-4">
+                    <div className="flex items-center justify-between px-2 sm:justify-center sm:gap-5">
                       <Button
                         variant="ghost"
                         size="icon"
                         aria-label="Toggle shuffle"
                         onClick={toggleShuffle}
                         className={cn(
-                          "size-10 rounded-full text-white/80 hover:text-white",
+                          "size-11 rounded-full text-white/80 hover:text-white",
                           shuffle && "text-primary hover:text-primary"
                         )}
                       >
@@ -168,22 +216,22 @@ export function NowPlaying() {
                         size="icon"
                         aria-label="Previous track"
                         onClick={() => prev()}
-                        className="size-10 rounded-full text-white/90 hover:text-white"
+                        className="size-12 rounded-full text-white/90 hover:text-white"
                       >
-                        <SkipBack className="size-5 fill-current" />
+                        <SkipBack className="size-6 fill-current" />
                       </Button>
                       <Button
                         size="icon"
                         aria-label={isPlaying ? "Pause" : "Play"}
                         onClick={playPause}
-                        className="size-16 rounded-full bg-white text-black shadow-xl transition-transform hover:scale-105"
+                        className="size-[4.5rem] rounded-full bg-white text-black shadow-xl transition-transform hover:scale-105"
                       >
                         {isLoading ? (
-                          <Loader2 className="size-6 animate-spin" />
+                          <Loader2 className="size-7 animate-spin" />
                         ) : isPlaying ? (
-                          <Pause className="size-6 fill-current" />
+                          <Pause className="size-7 fill-current" />
                         ) : (
-                          <Play className="size-6 fill-current" />
+                          <Play className="size-7 fill-current" />
                         )}
                       </Button>
                       <Button
@@ -191,9 +239,9 @@ export function NowPlaying() {
                         size="icon"
                         aria-label="Next track"
                         onClick={() => next()}
-                        className="size-10 rounded-full text-white/90 hover:text-white"
+                        className="size-12 rounded-full text-white/90 hover:text-white"
                       >
-                        <SkipForward className="size-5 fill-current" />
+                        <SkipForward className="size-6 fill-current" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -201,7 +249,7 @@ export function NowPlaying() {
                         aria-label="Toggle repeat"
                         onClick={cycleRepeat}
                         className={cn(
-                          "size-10 rounded-full text-white/80 hover:text-white",
+                          "size-11 rounded-full text-white/80 hover:text-white",
                           repeat !== "off" && "text-primary hover:text-primary"
                         )}
                       >
@@ -212,11 +260,35 @@ export function NowPlaying() {
                         )}
                       </Button>
                     </div>
+
+                    {/* Volume — phones use hardware buttons; shown on
+                        tablets and desktop-narrow windows */}
+                    <div className="hidden items-center justify-center gap-2 sm:flex">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={muted ? "Unmute" : "Mute"}
+                        onClick={toggleMute}
+                        className="size-10 rounded-full text-white/80 hover:text-white"
+                      >
+                        <VolumeIcon className="size-5" />
+                      </Button>
+                      <Slider
+                        aria-label="Volume"
+                        className="w-40"
+                        value={[Math.round(volume * 100)]}
+                        max={100}
+                        step={1}
+                        onValueChange={(v) => setVolume((v[0] ?? 0) / 100)}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {nextTrack ? (
-                  <div className="shrink-0 pt-2">
+                  /* Hidden on phones — the controls must never be crowded;
+                     the queue is still reachable from the track menu. */
+                  <div className="hidden shrink-0 pt-2 sm:block">
                     <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-white/60">
                       Next up
                     </p>
@@ -232,7 +304,7 @@ export function NowPlaying() {
                           nextTrack.album || nextTrack.title
                         }`}
                         seed={nextTrack.id}
-                        className="size-10 rounded-md"
+                        className="size-11 rounded-md"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">

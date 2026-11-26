@@ -78,6 +78,7 @@ export function PlayerBar() {
   const playPause = usePlayer((s) => s.playPause);
   const next = usePlayer((s) => s.next);
   const prev = usePlayer((s) => s.prev);
+  const seek = usePlayer((s) => s.seek);
   const setVolume = usePlayer((s) => s.setVolume);
   const toggleMute = usePlayer((s) => s.toggleMute);
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
@@ -253,32 +254,53 @@ export function PlayerBar() {
 
       {/* Mobile */}
       <div className="relative pb-[env(safe-area-inset-bottom)] md:hidden">
-        <div
-          role="progressbar"
-          aria-label="Playback progress"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(pct)}
-          className="h-0.5 w-full bg-white/10"
+        {/* Tap-to-seek progress bar with a generous invisible hit area */}
+        <button
+          type="button"
+          aria-label="Seek — tap to jump"
+          disabled={!current}
+          onPointerDown={(e) => {
+            if (!current) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = Math.min(
+              1,
+              Math.max(0, (e.clientX - rect.left) / rect.width)
+            );
+            seek(ratio * (duration || current.duration || 0));
+          }}
+          className="group block w-full touch-none py-2.5"
         >
-          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2.5">
+          <span
+            aria-hidden="true"
+            className="relative mx-3 block h-1 rounded-full bg-white/10"
+          >
+            <span
+              className="absolute inset-y-0 left-0 rounded-full bg-primary"
+              style={{ width: `${pct}%` }}
+            />
+            {/* Thumb becomes visible/enlarged while pressed */}
+            <span
+              className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 transition-opacity group-active:opacity-100"
+              style={{ left: `${pct}%` }}
+            />
+          </span>
+        </button>
+        <div className="flex items-center gap-1 px-2 pb-1">
           <button
             type="button"
             onClick={() => setNowPlayingOpen(true)}
             aria-label="Open now playing"
-            className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:bg-white/5"
           >
             {current ? (
               <Art
                 src={current.image}
                 alt={`Album art for ${current.album || current.title}`}
                 seed={current.id}
-                className="size-11 rounded-md"
+                className="size-12 rounded-md"
               />
             ) : (
-              <span className="grid size-11 shrink-0 place-items-center rounded-md bg-white/10">
+              <span className="grid size-12 shrink-0 place-items-center rounded-md bg-white/10">
                 <Music2
                   className="size-4 text-muted-foreground"
                   aria-hidden="true"
@@ -312,14 +334,14 @@ export function PlayerBar() {
             size="icon"
             aria-label={isPlaying ? "Pause" : "Play"}
             onClick={playPause}
-            className="size-9 shrink-0 rounded-full bg-foreground text-background"
+            className="size-11 shrink-0 rounded-full bg-foreground text-background"
           >
             {isLoading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-5 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="size-4 fill-current" />
+              <Pause className="size-5 fill-current" />
             ) : (
-              <Play className="size-4 fill-current" />
+              <Play className="size-5 fill-current" />
             )}
           </Button>
           <Button
@@ -327,9 +349,21 @@ export function PlayerBar() {
             size="icon"
             aria-label="Next track"
             onClick={() => next()}
-            className="size-9 shrink-0 rounded-full text-muted-foreground"
+            className="size-11 shrink-0 rounded-full text-muted-foreground"
           >
-            <SkipForward className="size-4 fill-current" />
+            <SkipForward className="size-5 fill-current" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Open queue"
+            onClick={() => setQueueOpen(!queueOpen)}
+            className={cn(
+              "size-11 shrink-0 rounded-full text-muted-foreground",
+              queueOpen && "text-primary"
+            )}
+          >
+            <ListMusic className="size-5" />
           </Button>
         </div>
       </div>
